@@ -23,7 +23,10 @@ spring:
   mvc:
     problemdetails:
       enabled: true
-
+jwt:
+  secret: 5rDmTtqp7KKanOl22OzBh6lC509zs1uuoLoiJkf97gAveb3m1s8SvRn1ugaxvbSm+lwCEn3FG7oRp9JXv58/Dg==
+  access-token-expiration: 3600000    # 1 saat (ms)
+  refresh-token-expiration: 604800000 # 7 gün (ms)
 logging:
   level:
     root: INFO

@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public UserResponse getById(Long id) {
@@ -56,7 +58,7 @@ public class UserService {
             throw new BusinessException("Bu email adresi zaten kullanılıyor", ErrorCode.DUPLICATE_ENTRY, HttpStatus.CONFLICT);
         }
 
-        UserEntity entity = userMapper.toEntity(request, request.getPassword());
+        UserEntity entity = userMapper.toEntity(request, passwordEncoder.encode(request.getPassword()));
         entity.setCreatedBy("SYSTEM");
         entity.setCreatedDate(LocalDateTime.now());
         entity.setCreatedIp(createdIp);
