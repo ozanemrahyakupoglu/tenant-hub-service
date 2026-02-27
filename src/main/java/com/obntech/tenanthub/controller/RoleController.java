@@ -1,0 +1,58 @@
+package com.obntech.tenanthub.controller;
+
+import com.obntech.tenanthub.dto.request.RoleCreateRequest;
+import com.obntech.tenanthub.dto.request.RoleUpdateRequest;
+import com.obntech.tenanthub.dto.response.RoleResponse;
+import com.obntech.tenanthub.service.RoleService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/roles")
+@RequiredArgsConstructor
+@Slf4j
+public class RoleController {
+
+    private final RoleService roleService;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RoleResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(roleService.getById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<RoleResponse>> getAll(
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(roleService.getAll(pageable));
+    }
+
+    @PostMapping
+    public ResponseEntity<RoleResponse> create(
+            @Valid @RequestBody RoleCreateRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(roleService.create(request, httpRequest.getRemoteAddr()));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RoleResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody RoleUpdateRequest request,
+            HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(roleService.update(id, request, httpRequest.getRemoteAddr()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        roleService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
