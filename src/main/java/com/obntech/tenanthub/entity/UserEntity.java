@@ -9,14 +9,14 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "\"USER\"")
+@Table(name = "USERS", schema = "devuser")
 @Getter
 @Setter
 public class UserEntity extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
-    @SequenceGenerator(name = "user_seq", sequenceName = "SEQ_USER", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq")
+    @SequenceGenerator(name = "users_seq", sequenceName = "SEQ_USERS", allocationSize = 1)
     @Column(name = "id")
     private Long id;
 

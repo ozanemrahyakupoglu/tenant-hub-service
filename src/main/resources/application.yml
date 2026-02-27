@@ -1,11 +1,11 @@
 server:
-  port: 8000
+  port: 8080
 
 spring:
   application:
     name: TenantHub
   datasource:
-    url: jdbc:postgresql://46.225.97.71:5432/botapi
+    url: jdbc:postgresql://46.225.97.71:5432/postgres?currentSchema=devuser
     username: devuser
     password: ${DB_PASSWORD:123456}
     driver-class-name: org.postgresql.Driver
