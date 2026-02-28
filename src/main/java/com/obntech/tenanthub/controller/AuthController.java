@@ -8,6 +8,7 @@ import com.obntech.tenanthub.security.JwtTokenProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +46,16 @@ public class AuthController {
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
 
+        List<String> roles = authentication.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .map(a -> a.replace("ROLE_", ""))
+            .toList();
+
+        List<String> permissions = authentication.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
+            .toList();
         userRepository.findByUsername(request.getUsername()).ifPresent(userX -> {
             userX.setLastLoginDate(LocalDateTime.now());
             userX.setErrorLoginCount(0);
@@ -54,7 +66,10 @@ public class AuthController {
 
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, cookie.toString())
-            .body(new LoginResponse(accessToken, jwtProperties.getAccessTokenExpiration()));
+            .body(new LoginResponse(
+                accessToken, jwtProperties.getAccessTokenExpiration(),
+                request.getUsername(), roles, permissions
+            ));
     }
 
     @PostMapping("/refresh")
@@ -67,6 +82,7 @@ public class AuthController {
         String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
         var userDetails = userDetailsService.loadUserByUsername(username);
 
+
         UsernamePasswordAuthenticationToken authToken =
             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
@@ -77,7 +93,11 @@ public class AuthController {
 
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, cookie.toString())
-            .body(new LoginResponse(newAccessToken, jwtProperties.getAccessTokenExpiration()));
+            .body(
+        new LoginResponse(
+            newAccessToken, jwtProperties.getAccessTokenExpiration(),
+            username, null, null
+        ));
     }
 
     @PostMapping("/logout")

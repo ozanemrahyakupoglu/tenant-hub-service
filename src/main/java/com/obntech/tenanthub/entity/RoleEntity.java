@@ -3,6 +3,8 @@ package com.obntech.tenanthub.entity;
 import com.obntech.tenanthub.entity.base.BaseEntity;
 import com.obntech.tenanthub.enums.Status;
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,4 +29,7 @@ public class RoleEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private Status status = Status.ACTIVE;
+
+    @OneToMany(mappedBy = "role", fetch = FetchType.EAGER)
+    private List<RolePermissionEntity> rolePermissions = new ArrayList<>();
 }

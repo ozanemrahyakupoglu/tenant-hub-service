@@ -3,6 +3,8 @@ package com.obntech.tenanthub.entity;
 import com.obntech.tenanthub.entity.base.BaseEntity;
 import com.obntech.tenanthub.enums.Status;
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -47,4 +49,7 @@ public class UserEntity extends BaseEntity {
 
     @Column(name = "error_login_count", nullable = false)
     private Integer errorLoginCount = 0;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private List<UserRoleEntity> userRoles = new ArrayList<>();
 }

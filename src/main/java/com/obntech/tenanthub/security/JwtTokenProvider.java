@@ -29,8 +29,15 @@ public class JwtTokenProvider {
 
     public String generateAccessToken(Authentication authentication) {
         String username = authentication.getName();
+
         String roles = authentication.getAuthorities().stream()
             .map(GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .collect(Collectors.joining(","));
+
+        String permissions = authentication.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
             .collect(Collectors.joining(","));
 
         return Jwts.builder()
