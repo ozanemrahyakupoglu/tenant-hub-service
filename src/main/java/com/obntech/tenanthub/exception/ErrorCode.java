@@ -11,7 +11,8 @@ public enum ErrorCode {
     DUPLICATE_ENTRY(1002, "Bu kayıt zaten mevcut"),
     VALIDATION_ERROR(1003, "Validasyon hatası"),
     BUSINESS_ERROR(1004, "İş kuralı hatası"),
-    INTERNAL_ERROR(1005, "Beklenmeyen bir hata oluştu");
+    INTERNAL_ERROR(1005, "Beklenmeyen bir hata oluştu"),
+    ACCESS_DENIED(1006, "Erişim reddedildi");
 
     private final int code;
     private final String message;

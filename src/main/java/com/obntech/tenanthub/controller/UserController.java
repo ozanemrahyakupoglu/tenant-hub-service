@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,17 +26,20 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_READ')")
     public ResponseEntity<UserResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getById(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('USER_READ')")
     public ResponseEntity<Page<UserResponse>> getAll(
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(userService.getAll(pageable));
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasAuthority('USER_READ')")
     public ResponseEntity<Page<UserResponse>> getAllByStatus(
             @PathVariable Status status,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -43,6 +47,7 @@ public class UserController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('USER_CREATE')")
     public ResponseEntity<UserResponse> create(
             @Valid @RequestBody UserCreateRequest request,
             HttpServletRequest httpRequest) {
@@ -51,6 +56,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_UPDATE')")
     public ResponseEntity<UserResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody UserUpdateRequest request,
@@ -59,6 +65,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status/{status}")
+    @PreAuthorize("hasAuthority('USER_UPDATE')")
     public ResponseEntity<Void> changeStatus(
             @PathVariable Long id,
             @PathVariable Status status,
@@ -68,6 +75,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_DELETE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
