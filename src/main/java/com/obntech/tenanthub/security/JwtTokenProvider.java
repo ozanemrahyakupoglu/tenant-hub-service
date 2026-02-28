@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -29,13 +30,22 @@ public class JwtTokenProvider {
 
     public String generateAccessToken(Authentication authentication) {
         String username = authentication.getName();
-        String roles = authentication.getAuthorities().stream()
+
+        List<String> roles = authentication.getAuthorities().stream()
             .map(GrantedAuthority::getAuthority)
-            .collect(Collectors.joining(","));
+            .filter(a -> a.startsWith("ROLE_"))
+            .map(a -> a.substring(5))
+            .collect(Collectors.toList());
+
+        List<String> permissions = authentication.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
+            .collect(Collectors.toList());
 
         return Jwts.builder()
             .subject(username)
             .claim("roles", roles)
+            .claim("permissions", permissions)
             .issuedAt(new Date())
             .expiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessTokenExpiration()))
             .signWith(key)

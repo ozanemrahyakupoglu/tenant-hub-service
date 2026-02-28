@@ -15,11 +15,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -44,6 +47,9 @@ public class AuthController {
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
 
+        List<String> roles = extractRoles(authentication);
+        List<String> permissions = extractPermissions(authentication);
+
         userRepository.findByUsername(request.getUsername()).ifPresent(userX -> {
             userX.setLastLoginDate(LocalDateTime.now());
             userX.setErrorLoginCount(0);
@@ -54,7 +60,7 @@ public class AuthController {
 
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, cookie.toString())
-            .body(new LoginResponse(accessToken, jwtProperties.getAccessTokenExpiration()));
+            .body(new LoginResponse(accessToken, jwtProperties.getAccessTokenExpiration(), roles, permissions));
     }
 
     @PostMapping("/refresh")
@@ -73,11 +79,14 @@ public class AuthController {
         String newAccessToken = jwtTokenProvider.generateAccessToken(authToken);
         String newRefreshToken = jwtTokenProvider.generateRefreshToken(authToken);
 
+        List<String> roles = extractRoles(authToken);
+        List<String> permissions = extractPermissions(authToken);
+
         ResponseCookie cookie = createRefreshTokenCookie(newRefreshToken, jwtProperties.getRefreshTokenExpiration() / 1000);
 
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, cookie.toString())
-            .body(new LoginResponse(newAccessToken, jwtProperties.getAccessTokenExpiration()));
+            .body(new LoginResponse(newAccessToken, jwtProperties.getAccessTokenExpiration(), roles, permissions));
     }
 
     @PostMapping("/logout")
@@ -87,6 +96,21 @@ public class AuthController {
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, cookie.toString())
             .build();
+    }
+
+    private List<String> extractRoles(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> a.startsWith("ROLE_"))
+            .map(a -> a.substring(5))
+            .collect(Collectors.toList());
+    }
+
+    private List<String> extractPermissions(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .filter(a -> !a.startsWith("ROLE_"))
+            .collect(Collectors.toList());
     }
 
     private ResponseCookie createRefreshTokenCookie(String value, long maxAgeSeconds) {
