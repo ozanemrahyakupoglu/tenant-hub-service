@@ -32,7 +32,7 @@ public class UserRoleService {
     @Transactional(readOnly = true)
     public List<UserRoleResponse> getByUserId(Long userId) {
         log.info("Kullanıcı rolleri getiriliyor. userId: {}", userId);
-        return userRoleRepository.findAllByUserId(userId).stream()
+        return userRoleRepository.findAllByUser_Id(userId).stream()
                 .map(userRoleMapper::toResponse)
                 .toList();
     }

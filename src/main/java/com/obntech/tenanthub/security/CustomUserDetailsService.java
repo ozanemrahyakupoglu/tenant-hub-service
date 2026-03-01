@@ -34,7 +34,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserEntity user = userRepository.findByUsername(username)
             .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı: " + username));
 
-        List<UserRoleEntity> userRoles = userRoleRepository.findAllByUserId(user.getId());
+        List<UserRoleEntity> userRoles = userRoleRepository.findAllByUser_Id(user.getId());
 
         List<GrantedAuthority> authorities = new ArrayList<>();
 
@@ -44,7 +44,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
             // Bu role ait permission'ları ekle
             List<RolePermissionEntity> rolePermissions =
-                rolePermissionRepository.findAllByRoleId(userRole.getRole().getId());
+                rolePermissionRepository.findAllByRole_Id(userRole.getRole().getId());
             for (RolePermissionEntity rp : rolePermissions) {
                 authorities.add(new SimpleGrantedAuthority(rp.getPermission().getName()));
             }

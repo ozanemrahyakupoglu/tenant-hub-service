@@ -31,7 +31,7 @@ public class RolePermissionService {
     @Transactional(readOnly = true)
     public List<RolePermissionResponse> getByRoleId(Long roleId) {
         log.info("Rol izinleri getiriliyor. roleId: {}", roleId);
-        return rolePermissionRepository.findAllByRoleId(roleId).stream()
+        return rolePermissionRepository.findAllByRole_Id(roleId).stream()
                 .map(rolePermissionMapper::toResponse)
                 .toList();
     }
