@@ -1,0 +1,111 @@
+-- ---------------------------------------------------------------
+-- RENT
+-- ---------------------------------------------------------------
+CREATE SEQUENCE devuser.SEQ_RENT START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE devuser.RENT (
+    ID              BIGINT          NOT NULL DEFAULT nextval('devuser.SEQ_RENT'),
+    REAL_ESTATE_ID  BIGINT          NOT NULL,
+    RENT_DATE       TIMESTAMP       NOT NULL,
+    RENT_AMOUNT     NUMERIC(15,2)   NOT NULL,
+    CURRENCY        VARCHAR(10)     NOT NULL,
+    STATUS          VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
+    CREATED_BY      VARCHAR(100)    NOT NULL,
+    CREATED_DATE    TIMESTAMP       NOT NULL,
+    CREATED_IP      VARCHAR(45)     NOT NULL,
+    UPDATED_BY      VARCHAR(100),
+    UPDATED_DATE    TIMESTAMP,
+    UPDATED_IP      VARCHAR(45),
+    CONSTRAINT PK_RENT              PRIMARY KEY (ID),
+    CONSTRAINT FK_RENT_REAL_ESTATE  FOREIGN KEY (REAL_ESTATE_ID) REFERENCES devuser.REAL_ESTATE(ID),
+    CONSTRAINT CK_RENT_STATUS       CHECK (STATUS IN ('ACTIVE', 'INACTIVE'))
+);
+
+CREATE INDEX IDX_RENT_REAL_ESTATE_ID ON devuser.RENT (REAL_ESTATE_ID);
+CREATE INDEX IDX_RENT_RENT_DATE      ON devuser.RENT (RENT_DATE);
+CREATE INDEX IDX_RENT_STATUS         ON devuser.RENT (STATUS);
+
+-- ---------------------------------------------------------------
+-- RENT_HIS
+-- ---------------------------------------------------------------
+CREATE SEQUENCE devuser.SEQ_RENT_HIS START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE devuser.RENT_HIS (
+    ID              BIGINT          NOT NULL DEFAULT nextval('devuser.SEQ_RENT_HIS'),
+    ORIGINAL_ID     BIGINT          NOT NULL,
+    REAL_ESTATE_ID  BIGINT          NOT NULL,
+    RENT_DATE       TIMESTAMP       NOT NULL,
+    RENT_AMOUNT     NUMERIC(15,2)   NOT NULL,
+    CURRENCY        VARCHAR(10)     NOT NULL,
+    STATUS          VARCHAR(20)     NOT NULL,
+    CREATED_BY      VARCHAR(100)    NOT NULL,
+    CREATED_DATE    TIMESTAMP       NOT NULL,
+    CREATED_IP      VARCHAR(45)     NOT NULL,
+    UPDATED_BY      VARCHAR(100),
+    UPDATED_DATE    TIMESTAMP,
+    UPDATED_IP      VARCHAR(45),
+    DML_OPERATION   VARCHAR(10),
+    DML_BY          VARCHAR(100),
+    DML_DATE        TIMESTAMP,
+    DML_IP          VARCHAR(45),
+    CONSTRAINT PK_RENT_HIS PRIMARY KEY (ID)
+);
+
+CREATE INDEX IDX_RENT_HIS_ORIGINAL_ID ON devuser.RENT_HIS (ORIGINAL_ID);
+
+-- ---------------------------------------------------------------
+-- RENT HISTORY TRIGGER
+-- ---------------------------------------------------------------
+CREATE OR REPLACE FUNCTION devuser.FN_RENT_HIS()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO devuser.RENT_HIS (
+            ID, ORIGINAL_ID, REAL_ESTATE_ID, RENT_DATE, RENT_AMOUNT, CURRENCY, STATUS,
+            CREATED_BY, CREATED_DATE, CREATED_IP, UPDATED_BY, UPDATED_DATE, UPDATED_IP,
+            DML_OPERATION, DML_BY, DML_DATE, DML_IP
+        ) VALUES (
+            nextval('devuser.SEQ_RENT_HIS'), NEW.ID, NEW.REAL_ESTATE_ID, NEW.RENT_DATE, NEW.RENT_AMOUNT, NEW.CURRENCY, NEW.STATUS,
+            NEW.CREATED_BY, NEW.CREATED_DATE, NEW.CREATED_IP, NEW.UPDATED_BY, NEW.UPDATED_DATE, NEW.UPDATED_IP,
+            'INSERT', NEW.CREATED_BY, NEW.CREATED_DATE, NEW.CREATED_IP
+        );
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO devuser.RENT_HIS (
+            ID, ORIGINAL_ID, REAL_ESTATE_ID, RENT_DATE, RENT_AMOUNT, CURRENCY, STATUS,
+            CREATED_BY, CREATED_DATE, CREATED_IP, UPDATED_BY, UPDATED_DATE, UPDATED_IP,
+            DML_OPERATION, DML_BY, DML_DATE, DML_IP
+        ) VALUES (
+            nextval('devuser.SEQ_RENT_HIS'), NEW.ID, NEW.REAL_ESTATE_ID, NEW.RENT_DATE, NEW.RENT_AMOUNT, NEW.CURRENCY, NEW.STATUS,
+            NEW.CREATED_BY, NEW.CREATED_DATE, NEW.CREATED_IP, NEW.UPDATED_BY, NEW.UPDATED_DATE, NEW.UPDATED_IP,
+            'UPDATE', NEW.UPDATED_BY, NEW.UPDATED_DATE, NEW.UPDATED_IP
+        );
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO devuser.RENT_HIS (
+            ID, ORIGINAL_ID, REAL_ESTATE_ID, RENT_DATE, RENT_AMOUNT, CURRENCY, STATUS,
+            CREATED_BY, CREATED_DATE, CREATED_IP, UPDATED_BY, UPDATED_DATE, UPDATED_IP,
+            DML_OPERATION, DML_BY, DML_DATE, DML_IP
+        ) VALUES (
+            nextval('devuser.SEQ_RENT_HIS'), OLD.ID, OLD.REAL_ESTATE_ID, OLD.RENT_DATE, OLD.RENT_AMOUNT, OLD.CURRENCY, OLD.STATUS,
+            OLD.CREATED_BY, OLD.CREATED_DATE, OLD.CREATED_IP, OLD.UPDATED_BY, OLD.UPDATED_DATE, OLD.UPDATED_IP,
+            'DELETE', COALESCE(OLD.UPDATED_BY, OLD.CREATED_BY), COALESCE(OLD.UPDATED_DATE, OLD.CREATED_DATE), COALESCE(OLD.UPDATED_IP, OLD.CREATED_IP)
+        );
+        RETURN OLD;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER TRG_RENT_HIS
+    AFTER INSERT OR UPDATE OR DELETE ON devuser.RENT
+    FOR EACH ROW EXECUTE FUNCTION devuser.FN_RENT_HIS();
+
+-- ---------------------------------------------------------------
+-- RENT PERMISSIONS
+-- ---------------------------------------------------------------
+INSERT INTO devuser.PERMISSION (ID, NAME, DESCRIPTION, MODULE, ACTION, STATUS, CREATED_BY, CREATED_DATE, CREATED_IP)
+VALUES
+    (nextval('devuser.SEQ_PERMISSION'), 'RENT_CREATE', 'Kira kaydı oluşturma yetkisi',    'RENT', 'CREATE', 'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1'),
+    (nextval('devuser.SEQ_PERMISSION'), 'RENT_READ',   'Kira kaydı görüntüleme yetkisi',  'RENT', 'READ',   'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1'),
+    (nextval('devuser.SEQ_PERMISSION'), 'RENT_UPDATE', 'Kira kaydı güncelleme yetkisi',   'RENT', 'UPDATE', 'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1'),
+    (nextval('devuser.SEQ_PERMISSION'), 'RENT_DELETE', 'Kira kaydı silme yetkisi',         'RENT', 'DELETE', 'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1');
