@@ -1,0 +1,111 @@
+-- ---------------------------------------------------------------
+-- PAYMENT
+-- ---------------------------------------------------------------
+CREATE SEQUENCE devuser.SEQ_PAYMENT START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE devuser.PAYMENT (
+    ID              BIGINT          NOT NULL DEFAULT nextval('devuser.SEQ_PAYMENT'),
+    RENT_ID         BIGINT          NOT NULL,
+    AMOUNT          NUMERIC(15,2)   NOT NULL,
+    CURRENCY        VARCHAR(10)     NOT NULL,
+    PAYMENT_DATE    TIMESTAMP       NOT NULL,
+    STATUS          VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
+    CREATED_BY      VARCHAR(100)    NOT NULL,
+    CREATED_DATE    TIMESTAMP       NOT NULL,
+    CREATED_IP      VARCHAR(45)     NOT NULL,
+    UPDATED_BY      VARCHAR(100),
+    UPDATED_DATE    TIMESTAMP,
+    UPDATED_IP      VARCHAR(45),
+    CONSTRAINT PK_PAYMENT           PRIMARY KEY (ID),
+    CONSTRAINT FK_PAYMENT_RENT      FOREIGN KEY (RENT_ID) REFERENCES devuser.RENT(ID),
+    CONSTRAINT CK_PAYMENT_STATUS    CHECK (STATUS IN ('ACTIVE', 'INACTIVE'))
+);
+
+CREATE INDEX IDX_PAYMENT_RENT_ID      ON devuser.PAYMENT (RENT_ID);
+CREATE INDEX IDX_PAYMENT_PAYMENT_DATE ON devuser.PAYMENT (PAYMENT_DATE);
+CREATE INDEX IDX_PAYMENT_STATUS       ON devuser.PAYMENT (STATUS);
+
+-- ---------------------------------------------------------------
+-- PAYMENT_HIS
+-- ---------------------------------------------------------------
+CREATE SEQUENCE devuser.SEQ_PAYMENT_HIS START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE devuser.PAYMENT_HIS (
+    ID              BIGINT          NOT NULL DEFAULT nextval('devuser.SEQ_PAYMENT_HIS'),
+    ORIGINAL_ID     BIGINT          NOT NULL,
+    RENT_ID         BIGINT          NOT NULL,
+    AMOUNT          NUMERIC(15,2)   NOT NULL,
+    CURRENCY        VARCHAR(10)     NOT NULL,
+    PAYMENT_DATE    TIMESTAMP       NOT NULL,
+    STATUS          VARCHAR(20)     NOT NULL,
+    CREATED_BY      VARCHAR(100)    NOT NULL,
+    CREATED_DATE    TIMESTAMP       NOT NULL,
+    CREATED_IP      VARCHAR(45)     NOT NULL,
+    UPDATED_BY      VARCHAR(100),
+    UPDATED_DATE    TIMESTAMP,
+    UPDATED_IP      VARCHAR(45),
+    DML_OPERATION   VARCHAR(10),
+    DML_BY          VARCHAR(100),
+    DML_DATE        TIMESTAMP,
+    DML_IP          VARCHAR(45),
+    CONSTRAINT PK_PAYMENT_HIS PRIMARY KEY (ID)
+);
+
+CREATE INDEX IDX_PAYMENT_HIS_ORIGINAL_ID ON devuser.PAYMENT_HIS (ORIGINAL_ID);
+
+-- ---------------------------------------------------------------
+-- PAYMENT HISTORY TRIGGER
+-- ---------------------------------------------------------------
+CREATE OR REPLACE FUNCTION devuser.FN_PAYMENT_HIS()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        INSERT INTO devuser.PAYMENT_HIS (
+            ID, ORIGINAL_ID, RENT_ID, AMOUNT, CURRENCY, PAYMENT_DATE, STATUS,
+            CREATED_BY, CREATED_DATE, CREATED_IP, UPDATED_BY, UPDATED_DATE, UPDATED_IP,
+            DML_OPERATION, DML_BY, DML_DATE, DML_IP
+        ) VALUES (
+            nextval('devuser.SEQ_PAYMENT_HIS'), NEW.ID, NEW.RENT_ID, NEW.AMOUNT, NEW.CURRENCY, NEW.PAYMENT_DATE, NEW.STATUS,
+            NEW.CREATED_BY, NEW.CREATED_DATE, NEW.CREATED_IP, NEW.UPDATED_BY, NEW.UPDATED_DATE, NEW.UPDATED_IP,
+            'INSERT', NEW.CREATED_BY, NEW.CREATED_DATE, NEW.CREATED_IP
+        );
+        RETURN NEW;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        INSERT INTO devuser.PAYMENT_HIS (
+            ID, ORIGINAL_ID, RENT_ID, AMOUNT, CURRENCY, PAYMENT_DATE, STATUS,
+            CREATED_BY, CREATED_DATE, CREATED_IP, UPDATED_BY, UPDATED_DATE, UPDATED_IP,
+            DML_OPERATION, DML_BY, DML_DATE, DML_IP
+        ) VALUES (
+            nextval('devuser.SEQ_PAYMENT_HIS'), NEW.ID, NEW.RENT_ID, NEW.AMOUNT, NEW.CURRENCY, NEW.PAYMENT_DATE, NEW.STATUS,
+            NEW.CREATED_BY, NEW.CREATED_DATE, NEW.CREATED_IP, NEW.UPDATED_BY, NEW.UPDATED_DATE, NEW.UPDATED_IP,
+            'UPDATE', NEW.UPDATED_BY, NEW.UPDATED_DATE, NEW.UPDATED_IP
+        );
+        RETURN NEW;
+    ELSIF (TG_OP = 'DELETE') THEN
+        INSERT INTO devuser.PAYMENT_HIS (
+            ID, ORIGINAL_ID, RENT_ID, AMOUNT, CURRENCY, PAYMENT_DATE, STATUS,
+            CREATED_BY, CREATED_DATE, CREATED_IP, UPDATED_BY, UPDATED_DATE, UPDATED_IP,
+            DML_OPERATION, DML_BY, DML_DATE, DML_IP
+        ) VALUES (
+            nextval('devuser.SEQ_PAYMENT_HIS'), OLD.ID, OLD.RENT_ID, OLD.AMOUNT, OLD.CURRENCY, OLD.PAYMENT_DATE, OLD.STATUS,
+            OLD.CREATED_BY, OLD.CREATED_DATE, OLD.CREATED_IP, OLD.UPDATED_BY, OLD.UPDATED_DATE, OLD.UPDATED_IP,
+            'DELETE', COALESCE(OLD.UPDATED_BY, OLD.CREATED_BY), COALESCE(OLD.UPDATED_DATE, OLD.CREATED_DATE), COALESCE(OLD.UPDATED_IP, OLD.CREATED_IP)
+        );
+        RETURN OLD;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER TRG_PAYMENT_HIS
+    AFTER INSERT OR UPDATE OR DELETE ON devuser.PAYMENT
+    FOR EACH ROW EXECUTE FUNCTION devuser.FN_PAYMENT_HIS();
+
+-- ---------------------------------------------------------------
+-- PAYMENT PERMISSIONS
+-- ---------------------------------------------------------------
+INSERT INTO devuser.PERMISSION (ID, NAME, DESCRIPTION, MODULE, ACTION, STATUS, CREATED_BY, CREATED_DATE, CREATED_IP)
+VALUES
+    (nextval('devuser.SEQ_PERMISSION'), 'PAYMENT_CREATE', 'Ödeme kaydı oluşturma yetkisi',    'PAYMENT', 'CREATE', 'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1'),
+    (nextval('devuser.SEQ_PERMISSION'), 'PAYMENT_READ',   'Ödeme kaydı görüntüleme yetkisi',  'PAYMENT', 'READ',   'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1'),
+    (nextval('devuser.SEQ_PERMISSION'), 'PAYMENT_UPDATE', 'Ödeme kaydı güncelleme yetkisi',   'PAYMENT', 'UPDATE', 'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1'),
+    (nextval('devuser.SEQ_PERMISSION'), 'PAYMENT_DELETE', 'Ödeme kaydı silme yetkisi',         'PAYMENT', 'DELETE', 'ACTIVE', 'SYSTEM', NOW(), '127.0.0.1');
