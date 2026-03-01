@@ -9,6 +9,7 @@ import com.obntech.tenanthub.exception.BusinessException;
 import com.obntech.tenanthub.exception.ErrorCode;
 import com.obntech.tenanthub.mapper.RealEstateMapper;
 import com.obntech.tenanthub.repository.RealEstateRepository;
+import com.obntech.tenanthub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ import java.time.LocalDateTime;
 public class RealEstateService {
 
     private final RealEstateRepository realEstateRepository;
+    private final UserRepository userRepository;
     private final RealEstateMapper realEstateMapper;
 
     @Transactional(readOnly = true)
@@ -54,6 +56,7 @@ public class RealEstateService {
         }
 
         RealEstateEntity entity = realEstateMapper.toEntity(request);
+        setTenantAndLandlord(entity, request.getTenantId(), request.getLandlordId());
         entity.setCreatedBy("SYSTEM");
         entity.setCreatedDate(LocalDateTime.now());
         entity.setCreatedIp(createdIp);
@@ -79,6 +82,7 @@ public class RealEstateService {
         entity.setDistrict(request.getDistrict());
         entity.setNeighborhood(request.getNeighborhood());
         entity.setAddress(request.getAddress());
+        setTenantAndLandlord(entity, request.getTenantId(), request.getLandlordId());
         entity.setUpdatedBy("SYSTEM");
         entity.setUpdatedDate(LocalDateTime.now());
         entity.setUpdatedIp(updatedIp);
@@ -105,6 +109,22 @@ public class RealEstateService {
         RealEstateEntity entity = findById(id);
         realEstateRepository.delete(entity);
         log.info("Gayrimenkul silindi. id: {}", id);
+    }
+
+    private void setTenantAndLandlord(RealEstateEntity entity, Long tenantId, Long landlordId) {
+        if (tenantId != null) {
+            entity.setTenant(userRepository.findById(tenantId)
+                    .orElseThrow(() -> new BusinessException("Kiracı bulunamadı. id: " + tenantId, ErrorCode.ENTITY_NOT_FOUND, HttpStatus.NOT_FOUND)));
+        } else {
+            entity.setTenant(null);
+        }
+
+        if (landlordId != null) {
+            entity.setLandlord(userRepository.findById(landlordId)
+                    .orElseThrow(() -> new BusinessException("Ev sahibi bulunamadı. id: " + landlordId, ErrorCode.ENTITY_NOT_FOUND, HttpStatus.NOT_FOUND)));
+        } else {
+            entity.setLandlord(null);
+        }
     }
 
     public RealEstateEntity findById(Long id) {

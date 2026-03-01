@@ -37,4 +37,8 @@ public class RealEstateCreateRequest {
     @NotBlank(message = "Adres boş olamaz")
     @Size(max = 500, message = "Adres en fazla 500 karakter olabilir")
     private String address;
+
+    private Long tenantId;
+
+    private Long landlordId;
 }

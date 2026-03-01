@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class RealEstateMapper {
 
     public RealEstateResponse toResponse(RealEstateEntity entity) {
-        return RealEstateResponse.builder()
+        RealEstateResponse.RealEstateResponseBuilder builder = RealEstateResponse.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
@@ -20,8 +20,19 @@ public class RealEstateMapper {
                 .address(entity.getAddress())
                 .status(entity.getStatus())
                 .createdDate(entity.getCreatedDate())
-                .createdBy(entity.getCreatedBy())
-                .build();
+                .createdBy(entity.getCreatedBy());
+
+        if (entity.getTenant() != null) {
+            builder.tenantId(entity.getTenant().getId())
+                   .tenantName(entity.getTenant().getFirstName() + " " + entity.getTenant().getLastName());
+        }
+
+        if (entity.getLandlord() != null) {
+            builder.landlordId(entity.getLandlord().getId())
+                   .landlordName(entity.getLandlord().getFirstName() + " " + entity.getLandlord().getLastName());
+        }
+
+        return builder.build();
     }
 
     public RealEstateEntity toEntity(RealEstateCreateRequest request) {

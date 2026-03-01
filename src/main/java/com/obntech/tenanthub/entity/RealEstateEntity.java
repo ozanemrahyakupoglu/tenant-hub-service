@@ -39,6 +39,14 @@ public class RealEstateEntity extends BaseEntity {
     @Column(name = "address", nullable = false, length = 500)
     private String address;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tenant_id", foreignKey = @ForeignKey(name = "FK_REAL_ESTATE_TENANT"))
+    private UserEntity tenant;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "landlord_id", foreignKey = @ForeignKey(name = "FK_REAL_ESTATE_LANDLORD"))
+    private UserEntity landlord;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private Status status = Status.ACTIVE;

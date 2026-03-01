@@ -20,6 +20,10 @@ public class RealEstateResponse {
     private String district;
     private String neighborhood;
     private String address;
+    private Long tenantId;
+    private String tenantName;
+    private Long landlordId;
+    private String landlordName;
     private Status status;
     private LocalDateTime createdDate;
     private String createdBy;
